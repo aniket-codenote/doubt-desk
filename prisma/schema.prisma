@@ -107,7 +107,7 @@ model TranscriptChunk {
   startTime  Float
   endTime    Float
   content    String
-  embedding  Unsupported("vector(768)")?
+  embedding  Unsupported("vector(3072)")?
 
   createdAt DateTime @default(now())
 
