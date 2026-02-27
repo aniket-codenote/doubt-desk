@@ -17,6 +17,4 @@ A chat-based application where students can ask doubts in real time and get accu
 
 <img width="1920" height="899" alt="image" src="https://github.com/user-attachments/assets/bcd05ac6-4c5e-4da0-abef-618558210f5f" />
 
-<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/741a5129-3959-42e1-8e41-044ae4c54595" />
-
 <img width="1920" height="899" alt="image" src="https://github.com/user-attachments/assets/1bccd7ac-d893-4427-a77b-4ab351fdabb4" />
