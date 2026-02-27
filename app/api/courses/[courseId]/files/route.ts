@@ -22,7 +22,7 @@ export async function GET(
       orderBy: { createdAt: "desc" },
     });
 
-    const formatted = files.map((f) => ({
+    const formatted = files.map((f: (typeof files)[number]) => ({
       id: f.id,
       fileName: f.fileName,
       fileSize: f.fileSize,

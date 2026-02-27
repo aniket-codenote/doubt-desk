@@ -25,7 +25,7 @@ export async function GET(request: NextRequest) {
       orderBy: { createdAt: "desc" },
     });
 
-    const formatted = courses.map((course) => ({
+    const formatted = courses.map((course: (typeof courses)[number]) => ({
       id: course.id,
       name: course.name,
       description: course.description,
