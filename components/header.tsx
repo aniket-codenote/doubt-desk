@@ -47,7 +47,7 @@ export default function Header() {
                 <Button
                   variant="ghost"
                   size="icon"
-                  onClick={() => signOut()}
+                  onClick={() => signOut({ callbackUrl: "/" })}
                   className="h-8 w-8 text-muted-foreground hover:text-foreground"
                 >
                   <LogOut className="h-4 w-4" />
