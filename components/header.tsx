@@ -23,12 +23,6 @@ export default function Header() {
         <nav className="flex items-center gap-2">
           {session?.user ? (
             <>
-              <Link href="/courses">
-                <Button variant="ghost" size="sm" className="gap-2 font-semibold">
-                  <GraduationCap className="h-4 w-4" />
-                  Courses
-                </Button>
-              </Link>
               {session.user.role === "INSTRUCTOR" && (
                 <Link href="/instructor">
                   <Button variant="ghost" size="sm" className="gap-2 font-semibold">
@@ -37,6 +31,14 @@ export default function Header() {
                   </Button>
                 </Link>
               )}
+
+              <Link href="/courses">
+                <Button variant="ghost" size="sm" className="gap-2 font-semibold">
+                  <GraduationCap className="h-4 w-4" />
+                  Courses
+                </Button>
+              </Link>
+
               <div className="flex items-center gap-3 ml-2 pl-3 border-l border-border/40">
                 <Avatar className="h-8 w-8">
                   <AvatarImage src={session.user.image || ""} />

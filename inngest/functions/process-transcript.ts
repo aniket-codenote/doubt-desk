@@ -123,52 +123,68 @@ export const processTranscript = inngest.createFunction(
       transcriptFileId?: string;
     };
 
-    const blocks = await step.run("parse-subtitles", async () => {
-      const parsed = parseSubtitles(srtContent);
-      if (parsed.length === 0) {
-        throw new Error("No valid subtitle blocks found in content");
-      }
-      return parsed;
-    });
+    try {
+      const blocks = await step.run("parse-subtitles", async () => {
+        const parsed = parseSubtitles(srtContent);
+        if (parsed.length === 0) {
+          throw new Error("No valid subtitle blocks found in content");
+        }
+        return parsed;
+      });
 
-    const chunks = await step.run("merge-chunks", async () => {
-      return mergeChunks(blocks, 200);
-    });
+      const chunks = await step.run("merge-chunks", async () => {
+        return mergeChunks(blocks, 200);
+      });
 
-    await step.run("generate-embeddings-and-store", async () => {
-      for (const chunk of chunks) {
-        const record = await prisma.transcriptChunk.create({
-          data: {
-            courseId,
-            transcriptFileId: transcriptFileId || null,
-            startTime: chunk.startTime,
-            endTime: chunk.endTime,
-            content: chunk.content,
-          },
-        });
+      await step.run("generate-embeddings-and-store", async () => {
+        for (const chunk of chunks) {
+          const record = await prisma.transcriptChunk.create({
+            data: {
+              courseId,
+              transcriptFileId: transcriptFileId || null,
+              startTime: chunk.startTime,
+              endTime: chunk.endTime,
+              content: chunk.content,
+            },
+          });
 
-        const embedding = await generateEmbedding(chunk.content);
-        const embeddingStr = formatEmbeddingForPg(embedding);
+          const embedding = await generateEmbedding(chunk.content);
+          const embeddingStr = formatEmbeddingForPg(embedding);
 
-        await prisma.$executeRawUnsafe(
-          `UPDATE "TranscriptChunk" SET embedding = $1::vector WHERE id = $2`,
-          embeddingStr,
-          record.id
-        );
-      }
+          await prisma.$executeRawUnsafe(
+            `UPDATE "TranscriptChunk" SET embedding = $1::vector WHERE id = $2`,
+            embeddingStr,
+            record.id
+          );
+        }
 
+        if (transcriptFileId) {
+          await prisma.transcriptFile.update({
+            where: { id: transcriptFileId },
+            data: { status: "processed" },
+          });
+        }
+      });
+
+      return {
+        success: true,
+        courseId,
+        chunksProcessed: chunks.length,
+      };
+    } catch (error) {
       if (transcriptFileId) {
-        await prisma.transcriptFile.update({
-          where: { id: transcriptFileId },
-          data: { status: "processed" },
-        });
+        try {
+          await prisma.transcriptFile.update({
+            where: { id: transcriptFileId },
+            data: { status: "error" },
+          });
+        } catch (updateError) {
+          console.error("Failed to mark transcript file as error:", updateError);
+        }
       }
-    });
 
-    return {
-      success: true,
-      courseId,
-      chunksProcessed: chunks.length,
-    };
+      console.error("Transcript processing failed:", error);
+      throw error;
+    }
   }
 );

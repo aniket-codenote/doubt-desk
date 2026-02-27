@@ -44,16 +44,19 @@ export async function searchTranscriptChunks(
   return chunks;
 }
 
+const NOT_COVERED = "This is not covered in the course.";
+
 const SYSTEM_PROMPT = `You are a teaching assistant. Your ONLY job is to answer questions using the provided transcript excerpts.
 
 STRICT RULES:
 1. Answer ONLY using information from the provided transcript excerpts.
-2. If the answer is NOT found in the excerpts, respond EXACTLY with: "This is not covered in the transcript."
+2. If the answer is NOT found in the excerpts, respond EXACTLY with: "${NOT_COVERED}"
 3. Include timestamp references in format [MM:SS - MM:SS] for every claim you make.
 4. Do NOT use any external knowledge.
 5. Do NOT make assumptions or inferences beyond what is stated in the excerpts.
 6. Do NOT hallucinate any information.
-7. Keep answers concise and directly grounded in the transcript text.`;
+7. If the excerpts contain relevant info, you MUST answer and MUST NOT respond with "${NOT_COVERED}".
+8. Keep answers concise and directly grounded in the transcript text.`;
 
 interface ChatResponse {
   answer: string;
@@ -97,7 +100,25 @@ ${question}
 Provide your answer. Include timestamp references [MM:SS - MM:SS] for every claim.`;
 
   const result = await model.generateContent(prompt);
-  const answer = result.response.text();
+  let answer = result.response.text().trim();
+
+  if (answer === NOT_COVERED && chunks.length > 0) {
+    const retryPrompt = `${SYSTEM_PROMPT}
+
+The excerpts below ARE relevant to the question. Provide a concise answer using ONLY the excerpts.
+Do NOT respond with "${NOT_COVERED}". Include timestamps for every claim.
+
+TRANSCRIPT EXCERPTS:
+${excerpts}
+
+STUDENT QUESTION:
+${question}
+
+Provide your answer now.`;
+
+    const retry = await model.generateContent(retryPrompt);
+    answer = retry.response.text().trim();
+  }
 
   return {
     answer,

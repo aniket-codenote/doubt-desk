@@ -89,6 +89,9 @@ export default function CourseDoubtsPage({
 
                     {msg.references && msg.references.length > 0 && (
                       <div className="space-y-2">
+                        <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground pl-1">
+                          References
+                        </p>
                         {msg.references.map((ref, i) => (
                           <div
                             key={i}

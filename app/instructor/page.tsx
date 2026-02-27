@@ -84,11 +84,8 @@ export default function InstructorDashboard() {
       <div className="px-6 lg:px-12 py-8 max-w-6xl mx-auto">
         <div className="mb-8">
           <h1 className="text-2xl lg:text-3xl font-black tracking-tight mb-1">
-            Instructor Dashboard
+            Your courses and enrollments
           </h1>
-          <p className="text-muted-foreground text-sm">
-            Manage your courses and student enrollments
-          </p>
         </div>
 
         <div className="grid grid-cols-3 gap-4 mb-8">
