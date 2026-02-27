@@ -385,8 +385,8 @@ export default function InstructorCoursePage({
                     <Badge
                       variant={
                         file.status === "processed"
-                          ? "default"
-                          : file.status === "error"
+                          ? "success"
+                          : file.status === "failed"
                             ? "destructive"
                             : "secondary"
                       }
@@ -394,8 +394,8 @@ export default function InstructorCoursePage({
                     >
                       {file.status === "processed"
                         ? "Processed"
-                        : file.status === "error"
-                          ? "Error"
+                        : file.status === "failed"
+                          ? "Failed"
                           : "Processing"}
                     </Badge>
                   </div>

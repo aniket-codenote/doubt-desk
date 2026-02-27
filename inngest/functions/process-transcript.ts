@@ -176,7 +176,7 @@ export const processTranscript = inngest.createFunction(
         try {
           await prisma.transcriptFile.update({
             where: { id: transcriptFileId },
-            data: { status: "error" },
+            data: { status: "failed" },
           });
         } catch (updateError) {
           console.error("Failed to mark transcript file as error:", updateError);

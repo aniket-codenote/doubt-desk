@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { formatTimestamp } from "@/lib/utils";
+import { useCourses } from "@/lib/hooks/courses";
 import {
   Send,
   Loader2,
@@ -25,6 +26,8 @@ export default function CourseDoubtsPage({
   const { messages, loading, sendMessage } = useChat(courseId);
   const [input, setInput] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const { courses } = useCourses();
+  const course = courses.find((c) => c.id === courseId);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -48,6 +51,11 @@ export default function CourseDoubtsPage({
         <div className="flex items-center gap-2.5">
           <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-primary/10 text-primary">
             <BookOpen className="h-4 w-4" />
+          </div>
+          <div className="min-w-0">
+            <p className="text-sm font-semibold truncate">
+              {course?.name || "Course"}
+            </p>
           </div>
         </div>
       </div>
