@@ -43,7 +43,9 @@ export default function InstructorCoursePage({
   const [course, setCourse] = useState<CourseDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
-  const [uploadSuccess, setUploadSuccess] = useState(false);
+  const [uploadFiles, setUploadFiles] = useState<
+    { name: string; status: "pending" | "uploading" | "done" | "error" }[]
+  >([]);
 
   const fetchCourse = useCallback(async () => {
     try {
@@ -74,45 +76,78 @@ export default function InstructorCoursePage({
   }, [status, fetchCourse]);
 
   async function handleFileUpload(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (!file) return;
+    const fileList = e.target.files;
+    if (!fileList || fileList.length === 0) return;
 
-    if (!file.name.endsWith(".srt") && !file.name.endsWith(".vtt")) {
-      toast.error("Please upload an SRT or VTT file");
+    const files = Array.from(fileList);
+
+    const invalidFiles = files.filter(
+      (f) => !f.name.endsWith(".srt") && !f.name.endsWith(".vtt")
+    );
+    if (invalidFiles.length > 0) {
+      toast.error(
+        `Invalid file(s): ${invalidFiles.map((f) => f.name).join(", ")}. Only .srt and .vtt files are supported.`
+      );
       return;
     }
 
     setUploading(true);
-    setUploadSuccess(false);
+    setUploadFiles(files.map((f) => ({ name: f.name, status: "pending" })));
 
-    try {
-      const formData = new FormData();
-      formData.append("file", file);
+    let successCount = 0;
+    let errorCount = 0;
 
-      const res = await fetch(`/api/courses/${courseId}/upload`, {
-        method: "POST",
-        body: formData,
-      });
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
 
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error);
+      setUploadFiles((prev) =>
+        prev.map((f, idx) => (idx === i ? { ...f, status: "uploading" } : f))
+      );
 
-      setUploadSuccess(true);
-      toast.success("Transcript uploaded! Processing will begin shortly.");
+      try {
+        const formData = new FormData();
+        formData.append("file", file);
 
-      e.target.value = "";
+        const res = await fetch(`/api/courses/${courseId}/upload`, {
+          method: "POST",
+          body: formData,
+        });
 
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error);
+
+        setUploadFiles((prev) =>
+          prev.map((f, idx) => (idx === i ? { ...f, status: "done" } : f))
+        );
+        successCount++;
+      } catch (error) {
+        setUploadFiles((prev) =>
+          prev.map((f, idx) => (idx === i ? { ...f, status: "error" } : f))
+        );
+        errorCount++;
+        toast.error(
+          `Failed to upload ${file.name}: ${error instanceof Error ? error.message : "Unknown error"}`
+        );
+      }
+    }
+
+    setUploading(false);
+    e.target.value = "";
+
+    if (successCount > 0) {
+      toast.success(
+        `${successCount} transcript${successCount > 1 ? "s" : ""} uploaded! Processing will begin shortly.`
+      );
       setTimeout(() => {
         fetchCourse();
       }, 3000);
-    } catch (error) {
-      toast.error(
-        error instanceof Error ? error.message : "Failed to upload transcript"
-      );
-    } finally {
-      setUploading(false);
     }
   }
+
+  const allDone =
+    uploadFiles.length > 0 &&
+    uploadFiles.every((f) => f.status === "done" || f.status === "error");
+  const isIdle = !uploading && uploadFiles.length === 0;
 
   if (loading || status === "loading") {
     return (
@@ -126,9 +161,6 @@ export default function InstructorCoursePage({
     return (
       <div className="flex flex-col items-center justify-center h-[60vh] text-center">
         <h3 className="text-lg font-bold mb-1">Course not found</h3>
-        <p className="text-sm text-muted-foreground mb-4">
-          This course may have been deleted.
-        </p>
         <Link href="/instructor">
           <Button variant="outline">Back to Dashboard</Button>
         </Link>
@@ -146,9 +178,13 @@ export default function InstructorCoursePage({
             </Button>
           </Link>
           <div>
-            <h1 className="text-2xl font-black tracking-tight">{course.name}</h1>
+            <h1 className="text-2xl font-black tracking-tight">
+              {course.name}
+            </h1>
             {course.description && (
-              <p className="text-sm text-muted-foreground">{course.description}</p>
+              <p className="text-sm text-muted-foreground">
+                {course.description}
+              </p>
             )}
           </div>
         </div>
@@ -186,22 +222,65 @@ export default function InstructorCoursePage({
           <CardHeader>
             <CardTitle className="text-lg flex items-center gap-2">
               <Upload className="h-5 w-5 text-primary" />
-              Upload Transcript
+              Upload Transcripts
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="border-2 border-dashed border-border/60 rounded-xl p-8 text-center hover:border-primary/40 transition-colors">
-              {uploading ? (
-                <div className="flex flex-col items-center gap-3">
-                  <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                  <p className="text-sm font-medium">Uploading...</p>
-                </div>
-              ) : uploadSuccess ? (
-                <div className="flex flex-col items-center gap-3">
-                  <CheckCircle className="h-8 w-8 text-emerald-500" />
-                  <p className="text-sm font-medium text-emerald-700">
-                    Upload successful! Processing in background...
-                  </p>
+              {uploading || (allDone && !isIdle) ? (
+                <div className="flex flex-col items-center gap-4 w-full">
+                  {uploading && (
+                    <div className="flex items-center gap-2 mb-1">
+                      <Loader2 className="h-5 w-5 animate-spin text-primary" />
+                      <p className="text-sm font-medium">
+                        Uploading{" "}
+                        {uploadFiles.filter((f) => f.status === "done").length +
+                          1}{" "}
+                        of {uploadFiles.length}...
+                      </p>
+                    </div>
+                  )}
+                  {allDone && (
+                    <div className="flex items-center gap-2 mb-1">
+                      <CheckCircle className="h-5 w-5 text-emerald-500" />
+                      <p className="text-sm font-medium text-emerald-700">
+                        {uploadFiles.filter((f) => f.status === "done").length}{" "}
+                        of {uploadFiles.length} uploaded successfully!
+                      </p>
+                    </div>
+                  )}
+                  <div className="w-full max-w-sm space-y-2 text-left">
+                    {uploadFiles.map((f, i) => (
+                      <div
+                        key={i}
+                        className="flex items-center gap-2 text-xs px-3 py-1.5 rounded-lg bg-muted/50"
+                      >
+                        {f.status === "uploading" && (
+                          <Loader2 className="h-3 w-3 animate-spin text-primary shrink-0" />
+                        )}
+                        {f.status === "done" && (
+                          <CheckCircle className="h-3 w-3 text-emerald-500 shrink-0" />
+                        )}
+                        {f.status === "error" && (
+                          <span className="h-3 w-3 rounded-full bg-red-500 shrink-0 inline-block" />
+                        )}
+                        {f.status === "pending" && (
+                          <span className="h-3 w-3 rounded-full bg-border shrink-0 inline-block" />
+                        )}
+                        <span className="truncate">{f.name}</span>
+                      </div>
+                    ))}
+                  </div>
+                  {allDone && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="mt-2"
+                      onClick={() => setUploadFiles([])}
+                    >
+                      Upload more
+                    </Button>
+                  )}
                 </div>
               ) : (
                 <>
@@ -212,17 +291,21 @@ export default function InstructorCoursePage({
                     Drop or click to browse
                   </p>
                   <p className="text-xs text-muted-foreground mb-4">
-                    Supports .srt or .vtt file.
+                    Supports .srt or .vtt files — select multiple files
                   </p>
                   <label>
                     <input
                       type="file"
                       accept=".srt,.vtt"
+                      multiple
                       onChange={handleFileUpload}
                       className="hidden"
                     />
-                    <Button asChild className="rounded-full px-6 font-bold cursor-pointer">
-                      <span>Choose File</span>
+                    <Button
+                      asChild
+                      className="rounded-full px-6 font-bold cursor-pointer"
+                    >
+                      <span>Choose Files</span>
                     </Button>
                   </label>
                 </>

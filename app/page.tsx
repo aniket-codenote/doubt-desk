@@ -11,7 +11,6 @@ export default async function HomePage() {
 
   return (
     <div className="flex flex-col min-h-[calc(100vh-4rem)]">
-      {/* Hero */}
       <section className="flex-1 flex items-center justify-center px-6 py-20">
         <div className="text-center max-w-3xl mx-auto">
           <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary/10 text-primary text-sm font-semibold mb-8">
@@ -38,7 +37,6 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* Features */}
       <section className="pb-20 px-6">
         <div className="max-w-5xl mx-auto grid md:grid-cols-3 gap-6">
           {[
