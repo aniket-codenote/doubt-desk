@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
 const EMBEDDING_MODEL = "gemini-embedding-001";
 const GENERATION_MODEL = "gemini-2.5-flash-lite";
+const CLASSIFIER_MODEL = "gemini-2.0-flash-lite";
 
 export async function generateEmbedding(text: string): Promise<number[]> {
   const model = genAI.getGenerativeModel({ model: EMBEDDING_MODEL });
@@ -44,14 +45,14 @@ export async function searchTranscriptChunks(
   return chunks;
 }
 
-const NOT_COVERED = "This is not covered in the course.";
+export const NOT_COVERED = "This is not covered in the course.";
 
 const SYSTEM_PROMPT = `You are a teaching assistant. Your ONLY job is to answer questions using the provided transcript excerpts.
 
 STRICT RULES:
 1. Answer ONLY using information from the provided transcript excerpts.
 2. If the answer is NOT found in the excerpts, respond EXACTLY with: "${NOT_COVERED}"
-3. Include timestamp references in format [MM:SS - MM:SS] for every claim you make.
+3. Do NOT include timestamps in the answer text. Timestamps will be shown separately.
 4. Do NOT use any external knowledge.
 5. Do NOT make assumptions or inferences beyond what is stated in the excerpts.
 6. Do NOT hallucinate any information.
@@ -65,6 +66,52 @@ interface ChatResponse {
     endTime: number;
     content: string;
   }>;
+}
+
+export type IntentLabel =
+  | "course_question"
+  | "greeting"
+  | "thanks"
+  | "goodbye"
+  | "off_topic"
+  | "unclear";
+
+export interface IntentResult {
+  intent: IntentLabel;
+  response: string;
+}
+
+export async function classifyIntent(question: string): Promise<IntentResult> {
+  const model = genAI.getGenerativeModel({ model: CLASSIFIER_MODEL });
+  const prompt = `You are an intent classifier for a transcript-grounded course Q&A system.
+
+Classify the user's message into one of:
+course_question, greeting, thanks, goodbye, off_topic, unclear.
+
+Rules:
+- course_question: asks about course content.
+- off_topic: unrelated to course content (general chit-chat or unrelated domain).
+- greeting/thanks/goodbye: social intent.
+- unclear: too vague to classify.
+
+Return ONLY valid JSON with keys "intent" and "response".
+If intent is not course_question, provide a short, friendly response that gently redirects the user to ask about the course transcript.
+If intent is course_question, set response to an empty string.
+
+User message:
+${question}
+`;
+
+  const result = await model.generateContent(prompt);
+  const text = result.response.text().trim();
+
+  try {
+    const parsed = JSON.parse(text) as IntentResult;
+    if (!parsed.intent) throw new Error("Missing intent");
+    return parsed;
+  } catch {
+    return { intent: "course_question", response: "" };
+  }
 }
 
 export async function generateGroundedAnswer(
@@ -97,7 +144,7 @@ ${excerpts}
 STUDENT QUESTION:
 ${question}
 
-Provide your answer. Include timestamp references [MM:SS - MM:SS] for every claim.`;
+Provide your answer without timestamps.`;
 
   const result = await model.generateContent(prompt);
   let answer = result.response.text().trim();
@@ -120,12 +167,17 @@ Provide your answer now.`;
     answer = retry.response.text().trim();
   }
 
+  const references =
+    answer === NOT_COVERED
+      ? []
+      : chunks.map((c) => ({
+          startTime: c.startTime,
+          endTime: c.endTime,
+          content: c.content,
+        }));
+
   return {
     answer,
-    references: chunks.map((c) => ({
-      startTime: c.startTime,
-      endTime: c.endTime,
-      content: c.content,
-    })),
+    references,
   };
 }
