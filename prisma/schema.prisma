@@ -81,6 +81,7 @@ model Course {
   instructor   User              @relation("InstructorCourses", fields: [instructorId], references: [id], onDelete: Cascade)
   enrollments  Enrollment[]
   chunks       TranscriptChunk[]
+  transcriptFiles  TranscriptFile[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -100,10 +101,26 @@ model Enrollment {
   @@unique([userId, courseId])
 }
 
+model TranscriptFile {
+  id        String  @id @default(cuid())
+  courseId   String
+  course     Course  @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  fileName   String
+  fileSize   Int
+  status     String  @default("processing") // processing | processed | error
+  chunks     TranscriptChunk[]
+
+  createdAt DateTime @default(now())
+
+  @@index([courseId])
+}
+
 model TranscriptChunk {
   id        String @id @default(cuid())
   courseId   String
   course     Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  transcriptFileId  String?
+  transcriptFile    TranscriptFile? @relation(fields: [transcriptFileId], references: [id], onDelete: SetNull)
   startTime  Float
   endTime    Float
   content    String
@@ -112,4 +129,5 @@ model TranscriptChunk {
   createdAt DateTime @default(now())
 
   @@index([courseId])
+  @@index([transcriptFileId])
 }

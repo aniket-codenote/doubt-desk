@@ -21,6 +21,7 @@ import {
   ArrowLeft,
   BookOpen,
   Users,
+  Trash2,
 } from "lucide-react";
 import Link from "next/link";
 
@@ -30,6 +31,15 @@ interface CourseDetail {
   description: string | null;
   chunkCount: number;
   studentCount: number;
+}
+
+interface TranscriptFileInfo {
+  id: string;
+  fileName: string;
+  fileSize: number;
+  status: string;
+  chunkCount: number;
+  createdAt: string;
 }
 
 export default function InstructorCoursePage({
@@ -46,6 +56,9 @@ export default function InstructorCoursePage({
   const [uploadFiles, setUploadFiles] = useState<
     { name: string; status: "pending" | "uploading" | "done" | "error" }[]
   >([]);
+  const [transcriptFiles, setTranscriptFiles] = useState<TranscriptFileInfo[]>(
+    []
+  );
 
   const fetchCourse = useCallback(async () => {
     try {
@@ -69,11 +82,23 @@ export default function InstructorCoursePage({
     }
   }, [courseId]);
 
+  const fetchTranscriptFiles = useCallback(async () => {
+    try {
+      const res = await fetch(`/api/courses/${courseId}/files`);
+      if (!res.ok) throw new Error("Failed to fetch files");
+      const data = await res.json();
+      setTranscriptFiles(data.files);
+    } catch (error) {
+      console.error("Error fetching transcript files:", error);
+    }
+  }, [courseId]);
+
   useEffect(() => {
     if (status === "authenticated") {
       fetchCourse();
+      fetchTranscriptFiles();
     }
-  }, [status, fetchCourse]);
+  }, [status, fetchCourse, fetchTranscriptFiles]);
 
   async function handleFileUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const fileList = e.target.files;
@@ -140,8 +165,15 @@ export default function InstructorCoursePage({
       );
       setTimeout(() => {
         fetchCourse();
+        fetchTranscriptFiles();
       }, 3000);
     }
+  }
+
+  function formatFileSize(bytes: number): string {
+    if (bytes < 1024) return bytes + " B";
+    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + " KB";
+    return (bytes / (1024 * 1024)).toFixed(1) + " MB";
   }
 
   const allDone =
@@ -161,6 +193,9 @@ export default function InstructorCoursePage({
     return (
       <div className="flex flex-col items-center justify-center h-[60vh] text-center">
         <h3 className="text-lg font-bold mb-1">Course not found</h3>
+        <p className="text-sm text-muted-foreground mb-4">
+          This course may have been deleted.
+        </p>
         <Link href="/instructor">
           <Button variant="outline">Back to Dashboard</Button>
         </Link>
@@ -218,7 +253,7 @@ export default function InstructorCoursePage({
           </Card>
         </div>
 
-        <Card className="border-border/40">
+        <Card className="border-border/40 mb-8">
           <CardHeader>
             <CardTitle className="text-lg flex items-center gap-2">
               <Upload className="h-5 w-5 text-primary" />
@@ -291,7 +326,7 @@ export default function InstructorCoursePage({
                     Drop or click to browse
                   </p>
                   <p className="text-xs text-muted-foreground mb-4">
-                    Supports .srt or .vtt files — select multiple files
+                    Supports .srt and .vtt formats
                   </p>
                   <label>
                     <input
@@ -313,6 +348,62 @@ export default function InstructorCoursePage({
             </div>
           </CardContent>
         </Card>
+
+        {transcriptFiles.length > 0 && (
+          <Card className="border-border/40">
+            <CardHeader>
+              <CardTitle className="text-lg flex items-center gap-2">
+                <BookOpen className="h-5 w-5 text-primary" />
+                Uploaded Transcripts
+              </CardTitle>
+              <CardDescription>
+                {transcriptFiles.length} file
+                {transcriptFiles.length !== 1 ? "s" : ""} uploaded
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="divide-y divide-border/40">
+                {transcriptFiles.map((file) => (
+                  <div
+                    key={file.id}
+                    className="flex items-center justify-between py-3 first:pt-0 last:pb-0"
+                  >
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary shrink-0">
+                        <FileText className="h-4 w-4" />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium truncate">
+                          {file.fileName}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {formatFileSize(file.fileSize)} · {file.chunkCount}{" "}
+                          chunks
+                        </p>
+                      </div>
+                    </div>
+                    <Badge
+                      variant={
+                        file.status === "processed"
+                          ? "default"
+                          : file.status === "error"
+                            ? "destructive"
+                            : "secondary"
+                      }
+                      className="shrink-0 text-[10px]"
+                    >
+                      {file.status === "processed"
+                        ? "Processed"
+                        : file.status === "error"
+                          ? "Error"
+                          : "Processing"}
+                    </Badge>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
       </div>
     </div>
   );

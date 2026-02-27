@@ -117,9 +117,10 @@ export const processTranscript = inngest.createFunction(
   { id: "process-transcript" },
   { event: "transcript.uploaded" },
   async ({ event, step }) => {
-    const { courseId, srtContent } = event.data as {
+    const { courseId, srtContent, transcriptFileId } = event.data as {
       courseId: string;
       srtContent: string;
+      transcriptFileId?: string;
     };
 
     const blocks = await step.run("parse-subtitles", async () => {
@@ -139,6 +140,7 @@ export const processTranscript = inngest.createFunction(
         const record = await prisma.transcriptChunk.create({
           data: {
             courseId,
+            transcriptFileId: transcriptFileId || null,
             startTime: chunk.startTime,
             endTime: chunk.endTime,
             content: chunk.content,
@@ -153,6 +155,13 @@ export const processTranscript = inngest.createFunction(
           embeddingStr,
           record.id
         );
+      }
+
+      if (transcriptFileId) {
+        await prisma.transcriptFile.update({
+          where: { id: transcriptFileId },
+          data: { status: "processed" },
+        });
       }
     });
 

@@ -14,7 +14,6 @@ export async function POST(
   const { courseId } = await params;
 
   try {
-    // Verify course ownership
     const course = await prisma.course.findUnique({
       where: { id: courseId },
     });
@@ -33,9 +32,10 @@ export async function POST(
       );
     }
 
-    // Read the SRT file content from the request body
     const contentType = request.headers.get("content-type") || "";
     let srtContent: string;
+    let fileName = "unknown.vtt";
+    let fileSize = 0;
 
     if (contentType.includes("multipart/form-data")) {
       const formData = await request.formData();
@@ -47,6 +47,8 @@ export async function POST(
         );
       }
       srtContent = await file.text();
+      fileName = file.name;
+      fileSize = file.size;
     } else {
       const body = await request.json();
       srtContent = body.srtContent;
@@ -59,18 +61,31 @@ export async function POST(
       );
     }
 
-    // Fire Inngest event for async processing
+    const transcriptFile = await prisma.transcriptFile.create({
+      data: {
+        courseId,
+        fileName,
+        fileSize,
+        status: "processing",
+      },
+    });
+
     await inngest.send({
       name: "transcript.uploaded",
       data: {
         courseId,
         srtContent,
+        transcriptFileId: transcriptFile.id,
       },
     });
 
     return NextResponse.json({
       success: true,
       message: "Transcript uploaded. Processing will begin shortly.",
+      transcriptFile: {
+        id: transcriptFile.id,
+        fileName: transcriptFile.fileName,
+      },
     });
   } catch (error) {
     console.error("Error uploading transcript:", error);

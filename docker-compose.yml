@@ -20,6 +20,7 @@ services:
   app:
     build:
       context: .
+      target: deps
       args:
         - DATABASE_URL=postgresql://postgres:postgres@db:5432/doubtdesk?schema=public
       shm_size: '2gb'
@@ -44,7 +45,7 @@ services:
       - inngest
     volumes:
       - .:/app
-      - /app/node_modules
+      - node_modules:/app/node_modules
       - ./prisma/migrations:/app/prisma/migrations
       - ./prisma/schema.prisma:/app/prisma/schema.prisma
       - ./prisma.config.ts:/app/prisma.config.ts
@@ -52,6 +53,7 @@ services:
   studio:
     build:
       context: .
+      target: deps
       args:
         - DATABASE_URL=postgresql://postgres:postgres@db:5432/doubtdesk?schema=public
       shm_size: '2gb'
@@ -66,10 +68,11 @@ services:
       - db
     volumes:
       - .:/app
-      - /app/node_modules
+      - node_modules:/app/node_modules
       - ./prisma/migrations:/app/prisma/migrations
       - ./prisma/schema.prisma:/app/prisma/schema.prisma
       - ./prisma.config.ts:/app/prisma.config.ts
 
 volumes:
   postgres_data:
+  node_modules:

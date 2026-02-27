@@ -49,9 +49,6 @@ export default function CourseDoubtsPage({
           <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-primary/10 text-primary">
             <BookOpen className="h-4 w-4" />
           </div>
-          <div>
-            <h2 className="text-sm font-bold">Ask Doubts</h2>
-          </div>
         </div>
       </div>
 
@@ -61,11 +58,7 @@ export default function CourseDoubtsPage({
             <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center mb-4">
               <MessageSquare className="h-8 w-8 text-primary" />
             </div>
-            <h3 className="text-lg font-bold mb-2">Ask your first doubt</h3>
-            <p className="text-sm text-muted-foreground max-w-md">
-              Type a question below. Answers will be grounded strictly in the
-              course transcript with timestamp references.
-            </p>
+            <h3 className="text-lg font-bold mb-2">Ask your doubts</h3>
           </div>
         )}
 
@@ -96,9 +89,6 @@ export default function CourseDoubtsPage({
 
                     {msg.references && msg.references.length > 0 && (
                       <div className="space-y-2">
-                        <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground pl-1">
-                          Transcript References
-                        </p>
                         {msg.references.map((ref, i) => (
                           <div
                             key={i}
@@ -145,7 +135,7 @@ export default function CourseDoubtsPage({
           <Input
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            placeholder="Ask a doubt about this course..."
+            placeholder="Ask"
             className="flex-1 h-12 rounded-full px-5 border-border/40 bg-muted/20 focus-visible:ring-primary/20 font-medium"
             disabled={loading}
           />
