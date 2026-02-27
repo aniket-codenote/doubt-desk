@@ -128,7 +128,7 @@ export default function CourseDoubtsPage({
               <div className="flex items-center gap-2 bg-muted/50 rounded-2xl px-5 py-3">
                 <Loader2 className="h-4 w-4 animate-spin text-primary" />
                 <span className="text-sm text-muted-foreground">
-                  Searching transcript...
+                  Searching...
                 </span>
               </div>
             </div>

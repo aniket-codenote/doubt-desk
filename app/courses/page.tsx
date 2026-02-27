@@ -196,6 +196,9 @@ export default function CoursesPage() {
                     <CardTitle className="text-lg mt-3 group-hover:text-primary transition-colors">
                       {course.name}
                     </CardTitle>
+                    <p className="text-xs text-muted-foreground font-medium">
+                      By {course.instructor.name || course.instructor.email}
+                    </p>
                     {course.description && (
                       <CardDescription className="line-clamp-2">
                         {course.description}
