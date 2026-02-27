@@ -188,31 +188,19 @@ export default function InstructorCoursePage({
               <Upload className="h-5 w-5 text-primary" />
               Upload Transcript
             </CardTitle>
-            <CardDescription>
-              Upload a subtitle file (.srt or .vtt). The system will parse it, create
-              logical chunks, generate embeddings, and store them for Q&A.
-              {course.chunkCount > 0 && (
-                <span className="block mt-1 text-amber-600 font-medium">
-                  Note: Uploading a new file will replace existing transcript data.
-                </span>
-              )}
-            </CardDescription>
           </CardHeader>
           <CardContent>
             <div className="border-2 border-dashed border-border/60 rounded-xl p-8 text-center hover:border-primary/40 transition-colors">
               {uploading ? (
                 <div className="flex flex-col items-center gap-3">
                   <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                  <p className="text-sm font-medium">Uploading transcript...</p>
+                  <p className="text-sm font-medium">Uploading...</p>
                 </div>
               ) : uploadSuccess ? (
                 <div className="flex flex-col items-center gap-3">
                   <CheckCircle className="h-8 w-8 text-emerald-500" />
                   <p className="text-sm font-medium text-emerald-700">
                     Upload successful! Processing in background...
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    Chunks will appear shortly after processing completes.
                   </p>
                 </div>
               ) : (
@@ -221,10 +209,10 @@ export default function InstructorCoursePage({
                     <FileText className="h-6 w-6" />
                   </div>
                   <p className="text-sm font-medium mb-1">
-                    Drop a subtitle file here or click to browse
+                    Drop or click to browse
                   </p>
                   <p className="text-xs text-muted-foreground mb-4">
-                    Supports SubRip (.srt) and WebVTT (.vtt) formats
+                    Supports .srt or .vtt file.
                   </p>
                   <label>
                     <input

@@ -134,12 +134,6 @@ export const processTranscript = inngest.createFunction(
       return mergeChunks(blocks, 200);
     });
 
-    await step.run("cleanup-existing", async () => {
-      await prisma.transcriptChunk.deleteMany({
-        where: { courseId },
-      });
-    });
-
     await step.run("generate-embeddings-and-store", async () => {
       for (const chunk of chunks) {
         const record = await prisma.transcriptChunk.create({

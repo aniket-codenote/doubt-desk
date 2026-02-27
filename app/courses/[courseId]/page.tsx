@@ -51,9 +51,6 @@ export default function CourseDoubtsPage({
           </div>
           <div>
             <h2 className="text-sm font-bold">Ask Doubts</h2>
-            <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">
-              Transcript-grounded answers
-            </p>
           </div>
         </div>
       </div>
